@@ -1,0 +1,11 @@
+.DS_Store
+.vscode-test/
+*.db
+*.lsif
+*.vsix
+dist
+node_modules
+npm-debug.log
+out
+tsconfig.lsif.json
+vsc-extension-quickstart.md

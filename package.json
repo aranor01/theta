@@ -1,0 +1,105 @@
+{
+  "name": "theta",
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#D0DAE0",
+    "theme": "light"
+  },
+  "publisher": "Unusoft",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aranor01/theta"
+  },
+  "bugs": {
+    "url": "https://github.com/aranor01/theta/issues"
+  },
+  "displayName": "Theta",
+  "description": "vscode extension to transform any text you like by eta templates.",
+  "version": "0.9",
+  "preview": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "Script",
+    "Tools",
+    "Productivity",
+    "Templates"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Theta",
+      "properties": {
+        "theta.templatesPath": {
+          "type": "string",
+          "default": null,
+          "description": "Specifies the folder path containing the *.eta template files."
+        },
+        "theta.defaultSelection": {
+          "type": "string",
+          "default": "line",
+          "enum": [
+            "none",
+            "word",
+            "line",
+            "document"
+          ],
+          "description": "Define portion of the text used as input by transform commands when selection is empty. It can be overridden by template configuration.",
+          "enumDescriptions": [
+            "When selection is empty do nothing.",
+            "Current word.",
+            "Current line.",
+            "Whole document."
+          ]
+        },
+        "theta.formatOnPaste": {
+          "type": "boolean",
+          "default": null,
+          "description": "Overrides editor.formatOnPaste. It can be overridden by template configuration."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "theta.copyAndTransform",
+        "title": "Theta: Transform Selection and Copy"
+      },
+      {
+        "command": "theta.transformAndPaste",
+        "title": "Theta: Transform Clipboard and Paste"
+      },
+      {
+        "command": "theta.transformSelection",
+        "title": "Theta: Transform Selection"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "eta": "^3.2.0"
+  }
+}
