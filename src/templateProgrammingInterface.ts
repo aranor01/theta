@@ -1,7 +1,6 @@
 import os from 'os';
 import { TextDocument, Uri, workspace } from 'vscode';
-
-export const FAIL_WAS_CALLED = "fail call";
+import { ThetaError } from './thetaError';
 
 /**
  * A document in Visual Studio Code editor, source of the text input to tranform and/or recipient of the output
@@ -76,6 +75,6 @@ export class TemplateProgrammingInterface {
 	 * @param message the text that will be shown to the user 
 	 */
 	fail(message: string): void {
-		throw new Error(message, { cause: FAIL_WAS_CALLED });
+		throw new ThetaError(message);
 	}
 }

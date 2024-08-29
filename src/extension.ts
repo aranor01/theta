@@ -6,7 +6,8 @@ import * as fs from 'fs';
 import { Eta } from "eta"
 import { ExtensionContext, QuickPickItem, QuickPickItemKind, Range, SnippetString, TextEdit, TextEditor, TextEditorEdit, commands, window } from 'vscode';
 import * as configuration from './configuration';
-import { Document, FAIL_WAS_CALLED, TemplateProgrammingInterface } from './templateProgrammingInterface';
+import { Document, TemplateProgrammingInterface } from './templateProgrammingInterface';
+import { ThetaError } from './thetaError';
 
 
 class SortablePickItem implements QuickPickItem {
@@ -72,61 +73,72 @@ const RECENTLY_USED_TEMPLATES_LENGH = 4;
 // - work on whole document
 // - format document at the end 
 
-async function transform(context: ExtensionContext, textEditor: TextEditor, _edit: TextEditorEdit, template: string | undefined, options: TransformCommandOptions): Promise<void> {
-	let transformAll = false;
-	let sourceDocument: Document | undefined
-
-	const config = new configuration.Configuration();
+async function chooseTemplate(context: ExtensionContext, config:configuration.Configuration): Promise<string | undefined>
+{
 	if (config.templatesPath.trim().length == 0) {
 		showError("The templates path is not configured");
 		return;
 	}
 
+	let template:string
+
+	let files: fs.Dirent[];
+	try {
+		files = fs.readdirSync(config.templatesPath, { withFileTypes: true });
+	}
+	catch (err) {
+		showError("Error occurring when reading template directory: " + ((err instanceof Error) ? err.message : err));
+		return;
+	}
+	files = files.filter(file => file.isFile() && path.extname(file.name) == ".eta");
+	if (files.length == 0) {
+		showError("The tempates directory does not contain templates");
+		return;
+	}
+	const pickItems: SortablePickItem[] = files.map(f => new TemplatePickItem(f));
+	const recentItems: string[] = context.globalState.get(RECENTLY_USED_TEMPLATES_STATE_KEY) as string[] ?? new Array<string>();//["capitalize"]
+	const mostRecentlyUsedOrder: number = -recentItems.length;
+	let order: number = mostRecentlyUsedOrder;
+	for (const recentItem of recentItems) {
+		const pickItem = pickItems.find((v) => v.label == recentItem)
+		if (pickItem) {
+			pickItem.order = order++;
+		}
+	}
+	if (order > mostRecentlyUsedOrder) {
+		pickItems.push(new SeparatorPickItem("recently used", mostRecentlyUsedOrder - 1))
+		pickItems.push(new SeparatorPickItem("", order))
+		pickItems.sort(SortablePickItem.compare)
+	}
+
+	const pick = await window.showQuickPick(pickItems);
+	if (!pick) return;
+	template = pick.label;
+	if (recentItems.length == 0 || pick.order != mostRecentlyUsedOrder) { //if selection is not alredy the most recently used template
+		const index = recentItems.indexOf(template);
+		if (index > 0) {
+			recentItems.splice(index, 1);
+		}
+		recentItems.unshift(template);
+		recentItems.splice(RECENTLY_USED_TEMPLATES_LENGH);
+		context.globalState.update(RECENTLY_USED_TEMPLATES_STATE_KEY, recentItems)
+	}
+
+	return template
+}
+
+async function transform(context: ExtensionContext, textEditor: TextEditor, _edit: TextEditorEdit, template: string | undefined, options: TransformCommandOptions): Promise<void> {
+	let transformAll = false;
+	let sourceDocument: Document | undefined
+
+	const config = new configuration.Configuration();
+
 	const doc = textEditor.document;
 	if (doc.lineCount == 0 || doc.lineAt(0).rangeIncludingLineBreak.isEmpty) return;
 
 	if (template === undefined) {
-		let files: fs.Dirent[];
-		try {
-			files = fs.readdirSync(config.templatesPath, { withFileTypes: true });
-		}
-		catch (err) {
-			showError("Error occurring when reading template directory: " + ((err instanceof Error) ? err.message : err));
-			return;
-		}
-		files = files.filter(file => file.isFile() && path.extname(file.name) == ".eta");
-		if (files.length == 0) {
-			showError("The tempates directory does not contain templates");
-			return;
-		}
-		const pickItems: SortablePickItem[] = files.map(f => new TemplatePickItem(f));
-		const recentItems: string[] = context.globalState.get(RECENTLY_USED_TEMPLATES_STATE_KEY) as string[] ?? new Array<string>();//["capitalize"]
-		const mostRecentlyUsedOrder: number = -recentItems.length;
-		let order: number = mostRecentlyUsedOrder;
-		for (const recentItem of recentItems) {
-			const pickItem = pickItems.find((v) => v.label == recentItem)
-			if (pickItem) {
-				pickItem.order = order++;
-			}
-		}
-		if (order > mostRecentlyUsedOrder) {
-			pickItems.push(new SeparatorPickItem("recently used", mostRecentlyUsedOrder - 1))
-			pickItems.push(new SeparatorPickItem("", order))
-			pickItems.sort(SortablePickItem.compare)
-		}
-
-		const pick = await window.showQuickPick(pickItems);
-		if (!pick) return;
-		template = pick.label;
-		if (recentItems.length == 0 || pick.order != mostRecentlyUsedOrder) { //if selection is not alredy the most recently used template
-			const index = recentItems.indexOf(template);
-			if (index > 0) {
-				recentItems.splice(index, 1);
-			}
-			recentItems.unshift(template);
-			recentItems.splice(RECENTLY_USED_TEMPLATES_LENGH);
-			context.globalState.update(RECENTLY_USED_TEMPLATES_STATE_KEY, recentItems)
-		}
+		template = await chooseTemplate(context, config)
+		if (template === undefined) return
 	}
 
 	const eta = new Eta({ views: config.templatesPath, autoEscape: false, autoTrim: false });
@@ -187,18 +199,27 @@ async function transform(context: ExtensionContext, textEditor: TextEditor, _edi
 		outputText = eta.render(template, new TemplateProgrammingInterface(inputText, sourceDocument, destinationDocument))
 	}
 	catch (err) {
-		console.error(err);
-		let details: string = "an error"
+		let causeError:unknown = err
+		let message:string = ""
+		let errorName: string = "an error"
 		if (err instanceof Error) {
-			if (err.cause === FAIL_WAS_CALLED) {
-				window.showErrorMessage(err.message)
-				return
+			if (err instanceof ThetaError) {
+				message = err.message
+				causeError = err.cause
 			}
 			else if (err.name.length > 0) {
-				details = '"' + err.name + '"'
+				causeError = err
+				errorName = err.name
 			}
 		}
-		window.showErrorMessage("The template engine returned " + details + ", please check the console")
+		if (message.length == 0) {
+			message = "The template engine returned " + errorName
+		}
+		if (causeError !== undefined) {
+			console.error(causeError);
+			message += ', please check the console'
+		}
+		window.showErrorMessage(message)
 		return
 	}
 
