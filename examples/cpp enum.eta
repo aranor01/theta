@@ -1,0 +1,44 @@
+<%/*** theta {"autoTrim": [false, 'nl'], "isSnippet":true} ***/%>
+<%@importJs "include/utils.js" %>
+<%
+function toPascalCaseCId(str) {
+    return utils.toPascalCase(str).replaceAll(/[^\w]/g, "_");
+}
+// omitting complete input validation or sanitization (ids should be unique, not starting with a digit...)
+const fields = it.rows.filter(r => r.length).map(toPascalCaseCId)
+
+let defaultEnumName = "";
+// this block is just an example of how destination or source can be used
+// starting from the filename, we generate a name for the enum (as default value for the snippet placeholder)
+const doc = (it.destination ?? it.source)
+if (!doc.isUntitled) { // if the file has not been saved we leave it empty
+    const filepath = doc.uri.path
+    const filename = /([^\/]+)$/.exec(filepath)[1]
+    const filenameWithoutExt = filename.replace(/\.[^/.]+$/, "")
+    defaultEnumName = toPascalCaseCId(filenameWithoutExt);
+}
+%>
+enum struct ${1:<%=defaultEnumName%>}
+{
+<%
+    fields.forEach(function(field){ %>
+    <%= field %>,
+<%
+    }); %>
+};
+
+inline std::ostream& operator<<(std::ostream& os, const $1& value)
+{
+    switch (value)
+    {
+<%
+     fields.forEach(function(field){ %>
+        case $1::<%= field %>:
+            os << "<%= field %>";
+            break;
+<% }) %>
+        default:
+            os << "Unknown $1{" << static_cast<std::underlying_type_t<$1>>(value) << "}";
+    }
+    return os;
+}

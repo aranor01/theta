@@ -3,7 +3,7 @@ import { TextDocument, Uri, workspace } from 'vscode';
 import { ThetaError } from './thetaError';
 
 /**
- * A document in Visual Studio Code editor, source of the text input to tranform and/or recipient of the output
+ * A document in Visual Studio Code editor, source of the text input to transform and/or recipient of the output
  */
 export class Document {
 	/**
@@ -40,9 +40,9 @@ export class Document {
 export class TemplateProgrammingInterface {
 	private _rows?: string[]
 	/**
-	 * Contain the input text to be processed.
-	 * It can be the selection, the current word, the current line, the whole document or the content of the clipboad
-	 * according to the template configuration and the command executed)
+	 * Contain the input text to be processed
+	 * It can be the selection, the current word, the current line, the whole document or the content of the clipboard
+	 * according to the template configuration and the command executed
 	 */
 	text: string
 	/**

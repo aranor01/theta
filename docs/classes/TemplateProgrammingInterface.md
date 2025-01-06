@@ -39,9 +39,9 @@ ___
 
 • **text**: `string`
 
-Contain the input text to be processed.
-It can be the selection, the current word, the current line, the whole document or the content of the clipboad
-according to the template configuration and the command executed)
+Contain the input text to be processed
+It can be the selection, the current word, the current line, the whole document or the content of the clipboard
+according to the template configuration and the command executed
 
 ## Accessors
 

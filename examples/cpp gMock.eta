@@ -1,0 +1,45 @@
+<%/***theta
+defaultSelection: document
+formatOnPaste: true
+***/%>
+
+<% if (it.source && it.source != it.destination && /\.h(?:pp)?$/.test(it.source.uri.path)) {%>
+#include "<%= it.source.relativePath %>"
+<% }
+
+const classRe = /^(?:class|struct)\s+(\w+)/
+const methodRe = /(?:virtual\s+)?(?<retType>\w[\w:<>]*)\s+(?<name>\w+)\s*(?<params>\([^\)]*\))\s*(?<const>const)?\s*(?:override)?\s*(?:=\s*0\s*)?/
+
+let inStruct = false
+let structFound = false
+for (row of it.rows) {
+     if (!inStruct) {
+          const m = row.match(classRe)
+          if (m)
+          {
+               inStruct = true
+               structFound = true %>
+struct <%= m[1] %>Mock : <%= m[1] %>
+{
+<%
+          }
+     } else {
+          const m = methodRe.exec(row)
+          if (m)
+          { -%>
+MOCK_METHOD(<%= m.groups.retType %>, <%= m.groups.name %>, <%= m.groups.params %>, (<%= m.groups.const??"" %> override));
+<%
+          } else if (row.startsWith("};")) {
+               inStruct = false %>
+};
+<%
+          }
+     }
+}
+if (!structFound) {
+     it.fail("No class or struct was found")
+}
+else if (inStruct) { -%>
+};
+<%
+} -%>

@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Eta } from "eta"
 import { ExtensionContext, QuickPickItem, QuickPickItemKind, Range, SnippetString, TextEdit, TextEditor, TextEditorEdit, commands, window } from 'vscode';
 import * as configuration from './configuration';
 import { Document, TemplateProgrammingInterface } from './templateProgrammingInterface';
@@ -68,19 +67,18 @@ enum TransformCommandOptions {
 }
 
 const RECENTLY_USED_TEMPLATES_STATE_KEY = "recent";
-const RECENTLY_USED_TEMPLATES_LENGH = 4;
+const RECENTLY_USED_TEMPLATES_LENGTH = 4;
 // per-template options:
 // - work on whole document
 // - format document at the end 
 
-async function chooseTemplate(context: ExtensionContext, config:configuration.Configuration): Promise<string | undefined>
-{
+async function chooseTemplate(context: ExtensionContext, config: configuration.Configuration): Promise<string | undefined> {
 	if (config.templatesPath.trim().length == 0) {
 		showError("The templates path is not configured");
 		return;
 	}
 
-	let template:string
+	let template: string
 
 	let files: fs.Dirent[];
 	try {
@@ -92,7 +90,7 @@ async function chooseTemplate(context: ExtensionContext, config:configuration.Co
 	}
 	files = files.filter(file => file.isFile() && path.extname(file.name) == ".eta");
 	if (files.length == 0) {
-		showError("The tempates directory does not contain templates");
+		showError("The templates directory does not contain templates");
 		return;
 	}
 	const pickItems: SortablePickItem[] = files.map(f => new TemplatePickItem(f));
@@ -114,13 +112,13 @@ async function chooseTemplate(context: ExtensionContext, config:configuration.Co
 	const pick = await window.showQuickPick(pickItems);
 	if (!pick) return;
 	template = pick.label;
-	if (recentItems.length == 0 || pick.order != mostRecentlyUsedOrder) { //if selection is not alredy the most recently used template
+	if (recentItems.length == 0 || pick.order != mostRecentlyUsedOrder) { //if selection is not already the most recently used template
 		const index = recentItems.indexOf(template);
 		if (index > 0) {
 			recentItems.splice(index, 1);
 		}
 		recentItems.unshift(template);
-		recentItems.splice(RECENTLY_USED_TEMPLATES_LENGH);
+		recentItems.splice(RECENTLY_USED_TEMPLATES_LENGTH);
 		context.globalState.update(RECENTLY_USED_TEMPLATES_STATE_KEY, recentItems)
 	}
 
@@ -134,15 +132,14 @@ async function transform(context: ExtensionContext, textEditor: TextEditor, _edi
 	const config = new configuration.Configuration();
 
 	const doc = textEditor.document;
-	if (doc.lineCount == 0 || doc.lineAt(0).rangeIncludingLineBreak.isEmpty) return;
+	if (hasFlag(options, TransformCommandOptions.ReadFromSelection) && (doc.lineCount == 0 || doc.lineAt(0).rangeIncludingLineBreak.isEmpty)) return;
 
 	if (template === undefined) {
 		template = await chooseTemplate(context, config)
 		if (template === undefined) return
 	}
 
-	const eta = new Eta({ views: config.templatesPath, autoEscape: false, autoTrim: false });
-	const configReader = config.buildEtaConfigReader(eta);
+	const configReader = config.buildEtaConfigReader({ views: config.templatesPath, autoEscape: false, autoTrim: false, cache: true });
 
 	let inputText = "";
 
@@ -151,7 +148,7 @@ async function transform(context: ExtensionContext, textEditor: TextEditor, _edi
 		sourceDocument = new Document(doc)
 		if (!selection || selection.isEmpty) {
 			//TODO read config from cache if available
-			configReader.run(template)
+			configReader.readConfig(template)
 
 			selection == undefined;
 			switch (configReader.templateConfig.defaultSelection) {
@@ -164,7 +161,7 @@ async function transform(context: ExtensionContext, textEditor: TextEditor, _edi
 					selection = doc.lineAt(textEditor.selection.active.line).range;
 					break;
 				case configuration.TransformDefaultSelection.Document:
-					//trasform all document
+					//transform all document
 					selection = doc.validateRange(new Range(0, 0, doc.lineCount, 0));
 					transformAll = true;
 					break;
@@ -196,11 +193,11 @@ async function transform(context: ExtensionContext, textEditor: TextEditor, _edi
 		if (hasFlag(options, TransformCommandOptions.WriteToSelection)) {
 			destinationDocument = sourceDocument ?? new Document(doc)
 		}
-		outputText = eta.render(template, new TemplateProgrammingInterface(inputText, sourceDocument, destinationDocument))
+		outputText = configReader.render(template, new TemplateProgrammingInterface(inputText, sourceDocument, destinationDocument))
 	}
 	catch (err) {
-		let causeError:unknown = err
-		let message:string = ""
+		let causeError: unknown = err
+		let message: string = ""
 		let errorName: string = "an error"
 		if (err instanceof Error) {
 			if (err instanceof ThetaError) {

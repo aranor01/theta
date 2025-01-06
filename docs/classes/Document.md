@@ -1,6 +1,6 @@
 # Class: Document
 
-A document in Visual Studio Code editor, source of the text input to tranform and/or recipient of the output
+A document in Visual Studio Code editor, source of the text input to transform and/or recipient of the output
 
 ## Table of contents
 
