@@ -6,7 +6,7 @@
     "color": "#D0DAE0",
     "theme": "light"
   },
-  "publisher": "Unusoft",
+  "publisher": "unusoft",
   "repository": {
     "type": "git",
     "url": "https://github.com/aranor01/theta"
@@ -14,9 +14,9 @@
   "bugs": {
     "url": "https://github.com/aranor01/theta/issues"
   },
-  "displayName": "Theta",
-  "description": "vscode extension to transform current line, word, document, selection or clipboard by eta templates.",
-  "version": "0.9.3",
+  "displayName": "Theta θ",
+  "description": "Transform current line, word, document, selection or clipboard by eta templates.",
+  "version": "0.9.4",
   "engines": {
     "vscode": "^1.96.0"
   },

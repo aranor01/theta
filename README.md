@@ -1,6 +1,6 @@
 # Theta - transform text by template
 
-This extension transforms the current line, word, document, selected text or the clipboard using the Eta template engine.
+This vscode extension transforms the current line, word, document, selected text or the clipboard using the Eta template engine. You can create your own set of tools to speed up repetitive coding tasks and text manipulation using just a little JavaScript.
 
 ## Quick Start and Basic Usage
 
