@@ -1,5 +1,8 @@
 .gitignore
 .vscode/
 src/
+images/
+docs/
+examples/
 dist/*.map
 tsconfig.json

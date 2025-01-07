@@ -117,10 +117,10 @@ The `as` clause can be omitted (in this case the filename without extension is u
 
 ## Examples of code generation
 
-- [cpp gMock.eta](<examples/cpp gMock.eta>) parses one or more c++ struct/class to generate mock classes, it shows a use of:
+- [cpp gMock.eta](examples/cpp%20gMock.eta) parses one or more c++ struct/class to generate mock classes, it shows a use of:
    - it.fail
    - it.source.relativePath
-- [cpp enum.eta](<examples/cpp enum.eta>) parses lines to generate an enum class with a stream insertion operator, it shows how to:
+- [cpp enum.eta](examples/cpp%20enum.eta) parses lines to generate an enum class with a stream insertion operator, it shows how to:
    - combine theta with vscode snippets
    - extract a title from a document path 
 

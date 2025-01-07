@@ -1,7 +1,7 @@
 {
   "name": "theta",
   "license": "MIT",
-  "icon": "images/icon.png",
+  "icon": "icon.png",
   "galleryBanner": {
     "color": "#D0DAE0",
     "theme": "light"
@@ -16,7 +16,7 @@
   },
   "displayName": "Theta",
   "description": "vscode extension to transform current line, word, document, selection or clipboard by eta templates.",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "engines": {
     "vscode": "^1.96.0"
   },
