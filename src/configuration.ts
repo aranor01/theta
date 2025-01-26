@@ -102,12 +102,12 @@ export class EtaConfigReader {
 	}
 
 
-	render<T extends object>(template: string, data: T): string {
+	render<T extends object>(template: string, data: T): Promise<string> {
 		this.defaultAutoTrim = this.eta.config.autoTrim;
 		this.defaultAutoEscape = this.eta.config.autoEscape;
 		this.rootTemplateProcessed = false;
 		this.templateConfig = this.baseConfig;
-		return this.eta.render(template, data)
+		return this.eta.renderAsync(template, data)
 	}
 
 	/**
@@ -143,8 +143,7 @@ export class EtaConfigReader {
 	private parseFrontMatter(str: string, readThetaConfig: boolean, config: any): string {
 		const match = EtaConfigReader.frontMatterRegExp.exec(str)
 		if (match) {
-			if (!match[2] || !match.indices)
-			{
+			if (!match[2] || !match.indices) {
 				throw new ThetaError("Theta header is not correctly closed");
 			}
 			let frontMatterConfig: any

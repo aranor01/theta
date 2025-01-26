@@ -193,7 +193,7 @@ async function transform(context: ExtensionContext, textEditor: TextEditor, _edi
 		if (hasFlag(options, TransformCommandOptions.WriteToSelection)) {
 			destinationDocument = sourceDocument ?? new Document(doc)
 		}
-		outputText = configReader.render(template, new TemplateProgrammingInterface(inputText, sourceDocument, destinationDocument))
+		outputText = await configReader.render(template, new TemplateProgrammingInterface(inputText, sourceDocument, destinationDocument))
 	}
 	catch (err) {
 		let causeError: unknown = err
