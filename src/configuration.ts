@@ -42,6 +42,7 @@ function typeIsValid(value: unknown, expectedType: string): boolean {
 	return expectedType === "undefined" || typeof value == expectedType;
 }
 export class Configuration {
+	private static etaFunctionHeader:string = "(template) => this.resolvePath(template, options);";
 	templatesPath: string
 	defaultTemplateConfig: TemplateConfiguration = new TemplateConfiguration()
 
@@ -53,7 +54,7 @@ export class Configuration {
 	}
 
 	buildEtaConfigReader(customConfig?: Partial<EtaConfig>, baseConfig?: TemplateConfiguration): EtaConfigReader {
-		return new EtaConfigReader(new Eta(customConfig), this, baseConfig ?? this.defaultTemplateConfig)
+		return new EtaConfigReader(new Eta({ ...customConfig, "functionHeader": Configuration.etaFunctionHeader }), this, baseConfig ?? this.defaultTemplateConfig)
 	}
 
 	readTemplateConfigurationFromObject(obj: any, defaults: TemplateConfiguration): TemplateConfiguration {
