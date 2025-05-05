@@ -42,7 +42,7 @@ function typeIsValid(value: unknown, expectedType: string): boolean {
 	return expectedType === "undefined" || typeof value == expectedType;
 }
 export class Configuration {
-	private static etaFunctionHeader:string = "(template) => this.resolvePath(template, options);";
+	private static etaFunctionHeader:string = "let resolvePath = (template) => this.resolvePath(template, options);";
 	templatesPath: string
 	defaultTemplateConfig: TemplateConfiguration = new TemplateConfiguration()
 
