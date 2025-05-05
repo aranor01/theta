@@ -24,7 +24,7 @@ This vscode extension transforms the current line, word, document, selected text
 - Theta: Transform Clipboard and Paste (theta.transformAndPaste)
 - Theta: Transform Selection (theta.transformSelection)
 
-All the commands accept a template as optional argument, this allows you to create a shortcut to send text to your theta template, for instance, if you add this to your keybindings.json:
+All the commands accept a template as optional argument, this allows you to create a shortcut to send text to your Theta template, for instance, if you add this to your keybindings.json:
 
 ```json
 {
@@ -57,7 +57,7 @@ autoTrim: [false, 'nl']
 ***/%>
 ```
 
-### Options used by theta
+### Options used by Theta
 
 These options are ignored when used in included files
 
@@ -69,26 +69,65 @@ These options are ignored when used in included files
 
 These options are the file-specific versions of the homonymous eta options, they are not extended to included files (see partials in [Code reuse](#code-reuse)) but they can be used again in each of them.
 
-- `autoTrim`: Controls new line/whitespace trimming like [autoTrim](https://eta.js.org/docs/2.x.x/api/configuration#autotrim), valid values are `"nl"`, `"slurp"` and `false` or an array of 2 of them to specify different behavior before opening tags and after closing tags. The default value for theta is `false`.
-- `autoEscape`: Controls whether interpolations are automatically XML-escaped. The default value for theta is `false`, it can be useful to change it when the output format is html or xml (in that case you can still by-pass it using raw interpolation tags `<%~ ~%>`).
+- `autoTrim`: Controls new line/whitespace trimming like [autoTrim](https://eta.js.org/docs/2.x.x/api/configuration#autotrim), valid values are `"nl"`, `"slurp"` and `false` or an array of 2 of them to specify different behavior before opening tags and after closing tags. The default value for Theta is `false`.
+- `autoEscape`: Controls whether interpolations are automatically XML-escaped. The default value for Theta is `false`, it can be useful to change it when the output format is html or xml (in that case you can still by-pass it using raw interpolation tags `<%~ ~%>`).
 
 ## Code reuse
 
-You have two ways to share code among templates. One is the to use the [Partials](https://eta.js.org/docs/intro/template-syntax#partials-and-layouts) feature from Eta. E.g., create the file `./include/to-pascal-case.eta` inside your theta template directory with this content:
+You have different ways to share code among templates.
+
+### Partials
+
+See [Partials](https://eta.js.org/docs/intro/template-syntax#partials-and-layouts) feature from Eta. For example, let's create the file `./include/to-pascal-case.eta` inside the Theta template directory with this content:
 
 ```js
 <%= it.str.trim().split(/[\s_]+/).map((word) => word[0].toUpperCase() + word.substring(1)).join('') %>
 ```
 
-In your templates you can use it like this: 
+Then we can use it in templates like this: 
 
 ```js
 <%~ include("./include/to-pascal-case.eta", { str: it.text }) %>
 ```
 
-This is just a minimal example that shows how to pass data to the partial, however a more useful application of this would involve a mix of raw content and evaluation tags.  
-A second way to reuse code is by injecting objects or functions using `@importJs`. 
-You could create a file `./include/to-pascal-case.js` containing only a function to achieve something similar to the previous example. However you may find convenient to group functions as methods of an object. E.g., let's add the file `./include/string-utils.js` containing:
+This is just a minimal example that shows how to pass data to the partial (in this case the whole input), however a more useful application of this would involve a mix of raw content and evaluation tags.
+
+### Dynamic import
+
+A second way to reuse code is by dynamic import. E.g., let's add the file `./include/utils.mjs` containing:
+
+```js
+export function toPascalCase(str) {
+    str = str.trim()
+    if (str.length === 0) return str
+    return str.split(/[\s_]+/).map((word) => word[0].toUpperCase() + word.substring(1)).join('')
+}
+
+export function camelCaseToSnakeCase(str) {
+    return str.replace(/([a-zA-Z])(?=[A-Z])/g, '$1_').toLowerCase()
+}
+```
+
+We can use this module in a template like this:
+
+```js
+<% let utils = await import (resolvePath("./include/utils.mjs")) %>
+```
+
+`resolvePath` converts paths relative to the template location to absolute paths. It's provided by Theta (it wouldn't work in other eta templates).
+
+A problem with dynamic imports is that the module are cached, and Node.js doesn't re-load them the second time you process the template, even if you have changed it. A workaround that can be used when you are debugging the module is to change the path every time:
+
+```js
+<% let utils = await import (`${resolvePath("./include/utils.mjs")}?t={Date.now()}`) %>
+```
+
+You can make leverage on side effects, although it's not a good practice.
+
+### @importJs (experimental)
+
+Last way to reuse code is experimental (hence it's subject to deprecation and API changes) and it works by injecting objects or functions using `@importJs`. 
+You could create a file `./include/to-pascal-case.js` containing only a function to achieve something similar to the example that uses partials. However you may find convenient to group functions as methods of an object. E.g., let's add the file `./include/string-utils.js` containing:
 
 ```js
 Object({
@@ -115,18 +154,47 @@ let stringUtils = (function(){return /* content of the string-utils.js file*/})(
 
 The `as` clause can be omitted (in this case the filename without extension is used as variable name).
 
+Every considerations regarding side effects apply to this method as well, especially if you use the IIFE idiom (but in that case you should probably prefer dynamic import).
+
 ## Examples of code generation
 
 - [cpp gMock.eta](examples/cpp%20gMock.eta) parses one or more c++ struct/class to generate mock classes, it shows a use of:
    - it.fail
    - it.source.relativePath
 - [cpp enum.eta](examples/cpp%20enum.eta) parses lines to generate an enum class with a stream insertion operator, it shows how to:
-   - combine theta with vscode snippets
+   - combine Theta with vscode snippets
    - extract a title from a document path 
 
 ![demo of cpp enum.eta](images/snippet_demo.gif)
 
+## Notes and known issues
+
+ Although strictly speaking it's not a problem of Theta, you should pay a particular attention to changes to prototypes. Let's say that we want a modified version of the `forEach` method of `Array` that would help us to simplify the code when we need a separator between each iteration. A perfect place for this would be a module, that can be imported dynamically:
+
+```js
+Array.prototype.forEachSep = function(callback, separator, lastSeparator = "") {
+    const lastIndex = this.length - 1
+    for (let i = 0; i < this.length; ++i) {
+        if (this.hasOwnProperty(i))
+            callback(this[i], i, (i == lastIndex) ? lastSeparator : separator);
+    }
+}
+```
+
+Then we could use it like in this fragment of template that generates a TypeScript constructor:
+```js
+constructor(<% dependencies.forEachSep((d, i, separator) => { -%>
+<%= lowercaseFirst(d.type) %><%=d.optional ? "?" : ""%>: <%= d.type %><%= separator%>
+<%- }, ", ") %>) {
+    //..
+}
+```
+
+However, the prototype change will be persistent and global to all templates (and obviously it's much worse if you override a built-in method).
+
 ## TODO
 
-- bundle
-- support multiple template directories, with per-directory configuration
+- Create issues for possible improvements and features
+  - bundle
+  - support multiple template directories, with per-directory configuration
+  - implement prototype pollution mitigation
