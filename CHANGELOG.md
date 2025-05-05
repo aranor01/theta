@@ -6,11 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Changed
+## [1.0.0] - 2025-05-05
 
 - Use asynchronous template rendering
 - Add resolvePath to use relative paths
 
-## [0.9.4] - 2024-01-07
+## [0.9.4] - 2025-01-07
 
 - Initial public release

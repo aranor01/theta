@@ -16,7 +16,7 @@
   },
   "displayName": "Theta θ",
   "description": "Transform current line, word, document, selection or clipboard by eta templates.",
-  "version": "0.9.4",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.96.0"
   },
